@@ -1,5 +1,5 @@
 #!/bin/bash
-# v1.2.7 更新: 修复配额累加逻辑(只用drop规则×2)、修复提前触发限制的bug (by jsishsjsj)
+# v1.2.7 更新: 修复配额累加逻辑(只用drop规则×2)、修复提前触发限制的bug (by Nyrazzy)
 
 set -euo pipefail
 
