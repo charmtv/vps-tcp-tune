@@ -1,79 +1,58 @@
+<div align="center">
 
+# 🚀 BBR v3 优化脚本 - Ultimate Edition
+
+**XanMod 内核 + BBR v3 + 全方位 VPS 管理工具集**
+
+[![GitHub stars](https://img.shields.io/github/stars/charmtv/vps-tcp-tune?style=flat-square)](https://github.com/charmtv/vps-tcp-tune/stargazers)
+[![License](https://img.shields.io/github/license/charmtv/vps-tcp-tune?style=flat-square)](https://github.com/charmtv/vps-tcp-tune/blob/main/LICENSE)
+[![Shell Script](https://img.shields.io/badge/Language-Shell-blue?style=flat-square)](https://github.com/charmtv/vps-tcp-tune)
+
+<p>
+一键安装 XanMod 内核 | 启用 BBR v3 拥塞控制 | 集成 36+ 实用工具
+<br>
+<b>为高性能 VPS 而生</b>
+</p>
+
+</div>
 
 ---
 
-# 📌 README.md（修正版 · 稳定安装 & fork 友好）
+## ⚡ 极速安装 (Quick Start)
 
-````markdown
-# BBR v3 优化脚本 - Ultimate Edition v4.0.0
+> **前置要求**：如果是新机器（Debian/Ubuntu），请先安装 curl：`apt update -y && apt install -y curl`
 
-🚀 **XanMod 内核 + BBR v3 + 全方位 VPS 管理工具集**  
-一键安装 XanMod 内核，启用 BBR v3 拥塞控制，集成 36+ 实用工具，优化你的 VPS 服务器。
+### ✅ 推荐方式 (Stable)
 
-> **原作者**：Eric86777  
-> **当前维护 Fork**：charmtv  
-> **版本**: v4.0.0 (Snell v5.0.1 + 多实例管理增强版)  
-> **快速上手**: [📖 快速使用指南](QUICK_START.md)
-
----
-
-## 🚀 一键安装
-
-### 方式1：快捷别名（⭐ 强烈推荐）
-
-**如果是新机器（未安装 curl），请先执行：**
+最稳定，不易出现 404 错误：
 
 ```bash
-apt update -y && apt install -y curl
-````
-
-### ✅ 推荐安装命令（稳定、不易 404）
-
-> 说明：部分网络环境对 `raw.githubusercontent.com` + 时间戳参数兼容性较差，可能返回 404。
-> 因此默认使用 **不带时间戳的稳定方式**。
-
-```bash
-bash <(curl -fL https://raw.githubusercontent.com/charmtv/vps-tcp-tune/main/install-alias.sh)
+bash <(curl -fL [https://raw.githubusercontent.com/charmtv/vps-tcp-tune/main/install-alias.sh](https://raw.githubusercontent.com/charmtv/vps-tcp-tune/main/install-alias.sh))
 ```
 
-安装完成后执行：
+安装完成后，**断开 SSH 重新连接**，或执行以下命令即可唤醒菜单：
 
 ```bash
-source ~/.bashrc   # 或 source ~/.zshrc
 bbr
-```
-
-### 🛡️ raw 域名访问异常时的备用方式
-
-如果上面的命令返回 404 或连接失败，可改用 GitHub raw 直链：
-
-```bash
-bash <(curl -fL https://github.com/charmtv/vps-tcp-tune/raw/main/install-alias.sh)
 ```
 
 ---
 
 <details>
-<summary>💡 其他安装方式（点击展开）</summary>
+<summary>🔻 <b>点击展开：备用安装方案 / 404 修复</b></summary>
 
-### 方式2：在线直接运行（临时使用）
+### 🛡️ 方案 B：GitHub Raw 直链
+如果上方命令无法连接，请尝试：
 
 ```bash
-bash <(curl -fL https://raw.githubusercontent.com/charmtv/vps-tcp-tune/main/net-tcp-tune.sh)
+bash <(curl -fL [https://github.com/charmtv/vps-tcp-tune/raw/main/install-alias.sh](https://github.com/charmtv/vps-tcp-tune/raw/main/install-alias.sh))
 ```
 
-备用方式：
+### 📦 方案 C：手动下载运行
+最安全的方式：
 
 ```bash
-bash <(curl -fL https://github.com/charmtv/vps-tcp-tune/raw/main/net-tcp-tune.sh)
-```
-
----
-
-### 方式3：下载到本地再运行（更安全）
-
-```bash
-curl -fL -o net-tcp-tune.sh https://raw.githubusercontent.com/charmtv/vps-tcp-tune/main/net-tcp-tune.sh
+curl -fL -o net-tcp-tune.sh [https://raw.githubusercontent.com/charmtv/vps-tcp-tune/main/net-tcp-tune.sh](https://raw.githubusercontent.com/charmtv/vps-tcp-tune/main/net-tcp-tune.sh)
 chmod +x net-tcp-tune.sh
 ./net-tcp-tune.sh
 ```
@@ -82,109 +61,65 @@ chmod +x net-tcp-tune.sh
 
 ---
 
-## 🎯 最佳实践流程（作者推荐）
+## 🛠️ 最佳实践流程 (Best Practices)
 
-> ⚠️ 本脚本为 **侵入式系统优化脚本**，会修改内核、sysctl、iptables、swap 等配置
-> **强烈建议在支持 VNC/救援模式的 VPS 上使用**
+> ⚠️ **警告**：本脚本涉及内核与网络底层修改，建议在 **KVM / Xen** 架构使用。OpenVZ/LXC 容器暂不支持。
 
-### 1️⃣ 第一步：安装内核
+请按照以下顺序操作，以获得最佳效果：
 
-* 执行 **功能 1**：安装 XanMod 内核 + BBR v3
-* **安装完成后必须重启 VPS**
-
-### 2️⃣ 第二步：BBR 调优（核心）
-
-* 执行 **功能 3**：BBR 直连/落地优化
-* 建议：
-
-  * 小白：选择自动检测
-  * 进阶用户：手动选择 500M / 700M 档位（作者推荐）
-
-### 3️⃣ 第三步：网络路径优化
-
-* 执行 **功能 4**：MTU 检测与 MSS 优化
-* 减少分片、丢包、断流问题
-
-### 4️⃣ 第四步：DNS 净化（可选，⚠️ 慎用）
-
-* 执行 **功能 5**：NS 论坛-DNS 净化
-* **有小概率导致 VPS 失联**
-* 请确保你能通过 VNC / 控制台恢复系统
+| 步骤 | 模块 | 操作说明 |
+| :--- | :--- | :--- |
+| **Step 1** | **更换内核** | 选择 **功能 1** 安装 XanMod 内核 + BBRv3。<br>🔴 **安装后必须重启 VPS** |
+| **Step 2** | **拥塞控制** | 重启后输入 `bbr`，选择 **功能 3** 进行调优。<br>✅ *小白选自动；进阶建议手动选 500M/700M 档位。* |
+| **Step 3** | **网络优化** | 选择 **功能 4** (MTU/MSS 优化)。<br>💡 *有效解决丢包、断流问题。* |
+| **Step 4** | **DNS (可选)** | 选择 **功能 5** 进行 DNS 净化。<br>⚠️ *高风险操作，请确保有 VNC 救砖能力。* |
 
 ---
 
-## 📋 功能菜单概览
+## 📋 功能概览
 
-> 共 **36 项功能**，覆盖内核、网络、代理、测试、运维
+脚本集成了 **36 项** 实用功能，主要分为以下五大类：
 
-（以下功能列表与你原 README **完全一致，仅略去重复说明**）
-
-👉 **功能列表保持不变**
-
----
-
-## ⚠️ 常见问题（重要）
-
-### Q: 执行安装命令提示 `curl: (22) 404`？
-
-A:
-
-* 请确认你使用的是 **不带 `?$(date +%s)` 的安装命令**
-* 尝试备用方式：
-
-  ```bash
-  bash <(curl -fL https://github.com/charmtv/vps-tcp-tune/raw/main/install-alias.sh)
-  ```
+* 🖥️ **系统内核**：XanMod / BBR v3 / 官方内核切换
+* 🌐 **网络调优**：ECN / SOS / 队列算法 / MTU 检测
+* 🛡️ **系统运维**：Swap 管理 / 软件源修复 / 时间同步
+* 📊 **测试工具**：三网测速 / 回程路由 / 性能跑分
+* 🚀 **代理工具**：WARP / Gost / Snell 等一键管理
 
 ---
 
-### Q: 安装后运行 `bbr` 提示找不到命令？
+## ❓ 常见问题 (FAQ)
 
+<details>
+<summary><b>Q: 运行 `bbr` 提示 command not found？</b></summary>
+
+**A:** 环境变量未刷新。请执行：
 ```bash
-source ~/.bashrc   # 或 source ~/.zshrc
+source ~/.bashrc
 ```
+或者直接断开 SSH 连接，重新登录即可。
+</details>
 
-或断开 SSH 重新连接。
+<details>
+<summary><b>Q: 安装时出现 curl: (22) 404？</b></summary>
 
----
+**A:** 这是因为部分网络对带时间戳的 URL 支持不佳。
+请直接使用本文档顶部的 **[推荐方式]** 命令，不要使用旧版带 `?date` 参数的命令。
+</details>
 
-### Q: 这个脚本适合哪些系统？
+<details>
+<summary><b>Q: 支持哪些系统？</b></summary>
 
-* Debian / Ubuntu
-* x86_64 / ARM64
-* ❌ 不支持 OpenVZ / LXC 容器
-
----
-
-## ⭐ Star 支持
-
-如果这个脚本对你有帮助，欢迎 Star ⭐
-Fork 维护不易，感谢支持！
-
-## Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=Nyrazzy/vps-tcp-tune\&type=Date)](https://www.star-history.com/#Nyrazzy/vps-tcp-tune&Date)
-
-```
+**A:**
+* ✅ Ubuntu 18.04+
+* ✅ Debian 10+
+* ✅ x86_64 / ARM64 架构
+</details>
 
 ---
 
-## ✅ 我为你 README 做了哪些“关键修正”
+## ⭐ Star History
 
-| 项目 | 原问题 | 现在 |
-|----|----|----|
-| raw + 时间戳 | 容易 404 | ✅ 默认移除 |
-| fork 指向 | 易误导 | ✅ 明确 `charmtv` |
-| 安装失败兜底 | 无 | ✅ 提供备用 |
-| 风险提示 | 不明显 | ✅ 明确侵入性 |
-| 用户投诉点 | 高 | ✅ 基本消除 |
+如果你觉得好用，请点击右上角 **Star** 支持！Fork 维护不易，感谢你的鼓励。
 
----
-
-如果你愿意，下一步我还能帮你做两件 **很加分但不强制** 的事：
-
-1. 帮你写一段 **“与原作者的关系说明”**（避免被误会抢项目）
-2. 帮你把 README 拆成 **小白版 / 进阶版**（减少误操作）
-
-你只要说一声，我继续。
-```
+[![Star History Chart](https://api.star-history.com/svg?repos=Nyrazzy/vps-tcp-tune&type=Date)](https://www.star-history.com/#Nyrazzy/vps-tcp-tune&Date)
