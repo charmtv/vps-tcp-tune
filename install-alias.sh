@@ -2,7 +2,7 @@
 #=============================================================================
 # 脚本名称: install-alias.sh
 # 功能描述: 为 net-tcp-tune 脚本创建/卸载快捷别名
-# 使用方法: 
+# 使用方法:
 #   安装: bash install-alias.sh [install]
 #   卸载: bash install-alias.sh uninstall
 #=============================================================================
@@ -12,6 +12,17 @@ GREEN='\033[1;32m'
 CYAN='\033[1;36m'
 RED='\033[1;31m'
 NC='\033[0m' # No Color
+
+# ------------------------------
+# 你 fork 仓库的配置（最小改动：固定为你的仓库）
+# ------------------------------
+GITHUB_USER="charmtv"
+GITHUB_REPO="vps-tcp-tune"
+GITHUB_BRANCH="main"
+SCRIPT_NAME="net-tcp-tune.sh"
+
+RAW_URL="https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/${GITHUB_BRANCH}/${SCRIPT_NAME}"
+FALLBACK_URL="https://github.com/${GITHUB_USER}/${GITHUB_REPO}/raw/${GITHUB_BRANCH}/${SCRIPT_NAME}"
 
 # 检测操作模式（安装或卸载）
 MODE="${1:-install}"
@@ -39,7 +50,7 @@ detect_rc_file() {
     else
         RC_FILE="$HOME/.bashrc"
     fi
-    
+
     # 如果文件不存在，创建它
     if [ ! -f "$RC_FILE" ]; then
         touch "$RC_FILE"
@@ -55,17 +66,17 @@ uninstall_alias() {
     echo -e "检测到 Shell: ${GREEN}${CURRENT_SHELL}${NC}"
     echo -e "配置文件: ${GREEN}${RC_FILE}${NC}"
     echo ""
-    
+
     # 检查别名是否已存在
     if ! grep -q "net-tcp-tune 快捷别名" "$RC_FILE" 2>/dev/null; then
         echo -e "${YELLOW}未找到已安装的别名，无需卸载${NC}"
         echo ""
         return 0
     fi
-    
+
     # 创建临时文件来存储清理后的内容
     TEMP_FILE=$(mktemp)
-    
+
     # 删除包含 "net-tcp-tune 快捷别名" 的整个块（包括注释和别名）
     # 先尝试删除从分隔线开始到别名结束的整个块
     # 如果失败，则只删除别名块本身
@@ -81,12 +92,12 @@ uninstall_alias() {
         # 直接删除别名块
         sed '/net-tcp-tune 快捷别名/,/^alias bbr=/d' "$RC_FILE" > "$TEMP_FILE"
     fi
-    
+
     # 检查是否有变更
     if ! diff -q "$RC_FILE" "$TEMP_FILE" > /dev/null 2>&1; then
         # 备份原文件
         cp "$RC_FILE" "${RC_FILE}.bak.$(date +%Y%m%d_%H%M%S)"
-        
+
         # 替换原文件
         mv "$TEMP_FILE" "$RC_FILE"
         echo -e "${GREEN}✅ 别名已从 ${RC_FILE} 中移除${NC}"
@@ -114,16 +125,19 @@ install_alias() {
     echo ""
     echo -e "配置文件: ${GREEN}${RC_FILE}${NC}"
     echo ""
-    
-    # 定义要添加的别名（带时间戳参数，确保每次获取最新版本）
-    ALIAS_CONTENT='
+
+    # 定义要添加的别名：
+    # - 默认不带时间戳，避免部分网络环境 raw.githubusercontent.com?xx 返回 404
+    # - raw 不通自动 fallback 到 github.com/raw
+    # - curl 使用 -fL：失败返回码 + 跟随重定向
+    ALIAS_CONTENT="
 # ========================================
 # net-tcp-tune 快捷别名 (自动添加)
-# 使用时间戳参数确保每次都获取最新版本，避免缓存
+# 默认使用稳定 URL；raw 不通则自动 fallback
 # ========================================
-alias bbr="bash <(curl -fsSL \"https://raw.githubusercontent.com/Nyrazzy/vps-tcp-tune/main/net-tcp-tune.sh?\$(date +%s)\")"
-'
-    
+alias bbr=\"bash <(curl -fL \\\"${RAW_URL}\\\" || curl -fL \\\"${FALLBACK_URL}\\\")\"
+"
+
     # 检查别名是否已存在
     if grep -q "net-tcp-tune 快捷别名" "$RC_FILE" 2>/dev/null; then
         echo -e "${YELLOW}别名已存在，跳过安装${NC}"
@@ -134,7 +148,7 @@ alias bbr="bash <(curl -fsSL \"https://raw.githubusercontent.com/Nyrazzy/vps-tcp
         echo -e "${GREEN}✅ 别名已添加到 ${RC_FILE}${NC}"
         echo ""
     fi
-    
+
     echo -e "${CYAN}=== 快捷命令 ===${NC}"
     echo ""
     echo -e "  ${GREEN}bbr${NC}   - 一键运行脚本"
@@ -169,4 +183,3 @@ case "$MODE" in
         uninstall_alias
         ;;
 esac
-
