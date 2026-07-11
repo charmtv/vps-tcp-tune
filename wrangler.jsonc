@@ -1,0 +1,17 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "milier-bbr-launcher",
+  "main": "worker/index.js",
+  "compatibility_date": "2026-07-11",
+  "workers_dev": false,
+  "routes": [
+    {
+      "pattern": "bbr.813099.xyz",
+      "custom_domain": true
+    }
+  ],
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  }
+}

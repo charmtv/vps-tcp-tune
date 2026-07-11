@@ -2,8 +2,8 @@
 
 set -u
 
-readonly RAW_URL="https://raw.githubusercontent.com/charmtv/vps-tcp-tune/main/net-tcp-tune.sh"
-readonly FALLBACK_URL="https://github.com/charmtv/vps-tcp-tune/raw/main/net-tcp-tune.sh"
+readonly RAW_URL="https://bbr.813099.xyz/net-tcp-tune.sh"
+readonly FALLBACK_URL="https://raw.githubusercontent.com/charmtv/vps-tcp-tune/main/net-tcp-tune.sh"
 readonly BLOCK_BEGIN="# >>> vps-tcp-tune >>>"
 readonly BLOCK_END="# <<< vps-tcp-tune <<<"
 

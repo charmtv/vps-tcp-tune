@@ -34,3 +34,6 @@ jobs:
 
       - name: 集成入口检查
         run: bash tests/test_integrations.sh
+
+      - name: Worker 路由检查
+        run: node tests/test_worker.mjs

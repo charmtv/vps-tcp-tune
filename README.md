@@ -17,8 +17,10 @@
 安装或更新 `bbr` 快捷命令：
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/charmtv/vps-tcp-tune/main/install-alias.sh)
+bash <(curl -fsSL https://bbr.813099.xyz)
 ```
+
+`bbr.813099.xyz` 由 Cloudflare Worker 提供，实时获取仓库 `main` 分支脚本。安装后的 `bbr` 命令优先使用该域名，访问失败时自动回退到 GitHub Raw。
 
 重新登录 SSH，或立即加载配置：
 
@@ -32,7 +34,7 @@ bbr
 不安装快捷命令，直接运行主脚本：
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/charmtv/vps-tcp-tune/main/net-tcp-tune.sh)
+bash <(curl -fsSL https://bbr.813099.xyz/net-tcp-tune.sh)
 ```
 
 ## 菜单分类
@@ -59,7 +61,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/charmtv/vps-tcp-tune/main/ne
 卸载快捷命令：
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/charmtv/vps-tcp-tune/main/install-alias.sh) uninstall
+bash <(curl -fsSL https://bbr.813099.xyz) uninstall
 ```
 
 更多说明见 [快速指南](QUICK_START.md)。

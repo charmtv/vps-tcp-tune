@@ -1,0 +1,12 @@
+{
+  "name": "milier-bbr-launcher",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node tests/test_worker.mjs",
+    "worker:check": "wrangler deploy --dry-run"
+  },
+  "devDependencies": {
+    "wrangler": "4.110.0"
+  }
+}

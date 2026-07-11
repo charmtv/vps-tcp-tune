@@ -63,7 +63,7 @@ while (($#)); do
     esac
 done
 
-if [[ "$url" == https://raw.githubusercontent.com/* ]]; then
+if [[ "$url" == "https://bbr.813099.xyz/net-tcp-tune.sh" ]]; then
     exit 22
 fi
 
@@ -80,6 +80,7 @@ HOME="$TEST_HOME" SHELL=/bin/bash PATH="$TEST_PATH" \
 assert_contains "$TEST_HOME/.bashrc" "export KEEP_THIS_LINE=1" "保留用户原配置"
 assert_contains "$TEST_HOME/.bashrc" "# >>> vps-tcp-tune >>>" "写入新版配置块"
 assert_contains "$TEST_HOME/.bashrc" "bbr()" "安装 bbr 下载函数"
+assert_contains "$TEST_HOME/.bashrc" "https://bbr.813099.xyz/net-tcp-tune.sh" "使用域名下载主脚本"
 if grep -Fq "Nyrazzy" "$TEST_HOME/.bashrc"; then
     fail "旧仓库地址应被清理"
 fi
