@@ -1,5 +1,6 @@
 const GITHUB_RAW_BASE =
   "https://raw.githubusercontent.com/charmtv/vps-tcp-tune/main";
+const RELEASE = "f1eebb2";
 
 const ROUTES = new Map([
   ["/", "install-alias.sh"],
@@ -9,7 +10,7 @@ const ROUTES = new Map([
 
 const SCRIPT_HEADERS = {
   "access-control-allow-origin": "*",
-  "cache-control": "public, max-age=60, s-maxage=300",
+  "cache-control": "no-cache",
   "content-disposition": "inline",
   "content-type": "text/plain; charset=utf-8",
   "x-content-type-options": "nosniff",
@@ -27,7 +28,7 @@ export default {
     const url = new URL(request.url);
     if (url.pathname === "/health") {
       return Response.json(
-        { ok: true, service: "milier-bbr-launcher" },
+        { ok: true, service: "milier-bbr-launcher", release: RELEASE },
         { headers: { "cache-control": "no-store" } },
       );
     }
@@ -37,7 +38,7 @@ export default {
       return new Response("Not Found\n", { status: 404 });
     }
 
-    const upstream = await fetch(`${GITHUB_RAW_BASE}/${filename}`, {
+    const upstream = await fetch(`${GITHUB_RAW_BASE}/${filename}?v=${RELEASE}`, {
       headers: {
         accept: "text/plain",
         "user-agent": "milier-bbr-launcher/1.0",

@@ -28,6 +28,7 @@ try {
   assert.deepEqual(await health.json(), {
     ok: true,
     service: "milier-bbr-launcher",
+    release: "f1eebb2",
   });
 
   const missing = await worker.fetch(
