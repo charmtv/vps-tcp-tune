@@ -1,185 +1,189 @@
-#!/bin/bash
-#=============================================================================
-# 脚本名称: install-alias.sh
-# 功能描述: 为 net-tcp-tune 脚本创建/卸载快捷别名
-# 使用方法:
-#   安装: bash install-alias.sh [install]
-#   卸载: bash install-alias.sh uninstall
-#=============================================================================
+#!/usr/bin/env bash
 
-YELLOW='\033[1;33m'
-GREEN='\033[1;32m'
-CYAN='\033[1;36m'
-RED='\033[1;31m'
-NC='\033[0m' # No Color
+set -u
 
-# ------------------------------
-# 你 fork 仓库的配置（最小改动：固定为你的仓库）
-# ------------------------------
-GITHUB_USER="charmtv"
-GITHUB_REPO="vps-tcp-tune"
-GITHUB_BRANCH="main"
-SCRIPT_NAME="net-tcp-tune.sh"
+readonly RAW_URL="https://raw.githubusercontent.com/charmtv/vps-tcp-tune/main/net-tcp-tune.sh"
+readonly FALLBACK_URL="https://github.com/charmtv/vps-tcp-tune/raw/main/net-tcp-tune.sh"
+readonly BLOCK_BEGIN="# >>> vps-tcp-tune >>>"
+readonly BLOCK_END="# <<< vps-tcp-tune <<<"
 
-RAW_URL="https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/${GITHUB_BRANCH}/${SCRIPT_NAME}"
-FALLBACK_URL="https://github.com/${GITHUB_USER}/${GITHUB_REPO}/raw/${GITHUB_BRANCH}/${SCRIPT_NAME}"
+readonly YELLOW='\033[1;33m'
+readonly GREEN='\033[1;32m'
+readonly CYAN='\033[1;36m'
+readonly RED='\033[1;31m'
+readonly NC='\033[0m'
 
-# 检测操作模式（安装或卸载）
 MODE="${1:-install}"
-if [ "$MODE" != "install" ] && [ "$MODE" != "uninstall" ]; then
-    echo -e "${RED}错误: 未知参数 '$MODE'${NC}"
-    echo "使用方法:"
-    echo "  安装: bash install-alias.sh [install]"
-    echo "  卸载: bash install-alias.sh uninstall"
-    exit 1
-fi
+RC_FILE=""
+TEMP_FILE=""
 
-# 检测当前使用的 shell
-CURRENT_SHELL=$(basename "$SHELL")
-
-# 根据不同的 shell 设置配置文件（检查多个可能的配置文件）
-detect_rc_file() {
-    if [ "$CURRENT_SHELL" = "zsh" ]; then
-        RC_FILE="$HOME/.zshrc"
-    elif [ "$CURRENT_SHELL" = "bash" ]; then
-        RC_FILE="$HOME/.bashrc"
-        # 如果 .bashrc 不存在，使用 .bash_profile
-        if [ ! -f "$RC_FILE" ]; then
-            RC_FILE="$HOME/.bash_profile"
-        fi
-    else
-        RC_FILE="$HOME/.bashrc"
-    fi
-
-    # 如果文件不存在，创建它
-    if [ ! -f "$RC_FILE" ]; then
-        touch "$RC_FILE"
-    fi
-}
-
-detect_rc_file
-
-# 卸载功能
-uninstall_alias() {
-    echo -e "${CYAN}=== 卸载 net-tcp-tune 快捷别名 ===${NC}"
-    echo ""
-    echo -e "检测到 Shell: ${GREEN}${CURRENT_SHELL}${NC}"
-    echo -e "配置文件: ${GREEN}${RC_FILE}${NC}"
-    echo ""
-
-    # 检查别名是否已存在
-    if ! grep -q "net-tcp-tune 快捷别名" "$RC_FILE" 2>/dev/null; then
-        echo -e "${YELLOW}未找到已安装的别名，无需卸载${NC}"
-        echo ""
-        return 0
-    fi
-
-    # 创建临时文件来存储清理后的内容
-    TEMP_FILE=$(mktemp)
-
-    # 删除包含 "net-tcp-tune 快捷别名" 的整个块（包括注释和别名）
-    # 先尝试删除从分隔线开始到别名结束的整个块
-    # 如果失败，则只删除别名块本身
-    if grep -q "^# ================" "$RC_FILE" 2>/dev/null; then
-        # 尝试删除从分隔线开始到别名结束的整个块
-        sed '/^# ================/,/^alias bbr=/d' "$RC_FILE" > "$TEMP_FILE" 2>/dev/null
-        # 检查是否还有别名残留
-        if grep -q "net-tcp-tune 快捷别名" "$TEMP_FILE" 2>/dev/null; then
-            # 如果还有残留，使用更精确的删除
-            sed '/net-tcp-tune 快捷别名/,/^alias bbr=/d' "$RC_FILE" > "$TEMP_FILE"
-        fi
-    else
-        # 直接删除别名块
-        sed '/net-tcp-tune 快捷别名/,/^alias bbr=/d' "$RC_FILE" > "$TEMP_FILE"
-    fi
-
-    # 检查是否有变更
-    if ! diff -q "$RC_FILE" "$TEMP_FILE" > /dev/null 2>&1; then
-        # 备份原文件
-        cp "$RC_FILE" "${RC_FILE}.bak.$(date +%Y%m%d_%H%M%S)"
-
-        # 替换原文件
-        mv "$TEMP_FILE" "$RC_FILE"
-        echo -e "${GREEN}✅ 别名已从 ${RC_FILE} 中移除${NC}"
-        echo ""
-        echo -e "${YELLOW}提示: 原配置文件已备份为 ${RC_FILE}.bak.*${NC}"
-        echo ""
-        echo -e "${CYAN}=== 现在生效（执行以下命令）===${NC}"
-        echo ""
-        echo -e "${YELLOW}source ${RC_FILE}${NC}"
-        echo ""
-        echo "或者关闭终端重新打开，卸载即生效。"
-        echo ""
-    else
+cleanup() {
+    if [ -n "$TEMP_FILE" ] && [ -f "$TEMP_FILE" ]; then
         rm -f "$TEMP_FILE"
-        echo -e "${YELLOW}未找到需要删除的内容${NC}"
-        echo ""
     fi
 }
 
-# 安装功能
-install_alias() {
-    echo -e "${CYAN}=== 安装 net-tcp-tune 快捷别名 ===${NC}"
-    echo ""
-    echo -e "检测到 Shell: ${GREEN}${CURRENT_SHELL}${NC}"
-    echo ""
-    echo -e "配置文件: ${GREEN}${RC_FILE}${NC}"
-    echo ""
+trap cleanup EXIT
 
-    # 定义要添加的别名：
-    # - 默认不带时间戳，避免部分网络环境 raw.githubusercontent.com?xx 返回 404
-    # - raw 不通自动 fallback 到 github.com/raw
-    # - curl 使用 -fL：失败返回码 + 跟随重定向
-    ALIAS_CONTENT="
-# ========================================
-# net-tcp-tune 快捷别名 (自动添加)
-# 默认使用稳定 URL；raw 不通则自动 fallback
-# ========================================
-alias bbr=\"bash <(curl -fL \\\"${RAW_URL}\\\" || curl -fL \\\"${FALLBACK_URL}\\\")\"
-"
+die() {
+    printf '%b错误：%s%b\n' "$RED" "$*" "$NC" >&2
+    exit 1
+}
 
-    # 检查别名是否已存在
-    if grep -q "net-tcp-tune 快捷别名" "$RC_FILE" 2>/dev/null; then
-        echo -e "${YELLOW}别名已存在，跳过安装${NC}"
-        echo ""
+detect_rc_file() {
+    local current_shell="${SHELL:-bash}"
+    current_shell="${current_shell##*/}"
+
+    case "$current_shell" in
+        zsh)
+            RC_FILE="$HOME/.zshrc"
+            ;;
+        bash)
+            RC_FILE="$HOME/.bashrc"
+            ;;
+        *)
+            RC_FILE="$HOME/.bashrc"
+            ;;
+    esac
+
+    mkdir -p "$(dirname "$RC_FILE")" || die "无法创建配置目录。"
+    touch "$RC_FILE" || die "无法写入 $RC_FILE。"
+}
+
+strip_managed_blocks() {
+    local input_file="$1"
+    local output_file="$2"
+
+    awk -v begin="$BLOCK_BEGIN" -v end="$BLOCK_END" '
+        $0 == begin { managed = 1; next }
+        $0 == end { managed = 0; next }
+        managed { next }
+
+        legacy {
+            if ($0 ~ /^alias bbr=/) {
+                legacy = 0
+            }
+            next
+        }
+
+        $0 == "# ========================================" {
+            if ((getline next_line) > 0) {
+                if (next_line ~ /^# net-tcp-tune 快捷别名/) {
+                    legacy = 1
+                    next
+                }
+                print
+                print next_line
+                next
+            }
+        }
+
+        $0 ~ /^# net-tcp-tune 快捷别名/ { legacy = 1; next }
+        $0 ~ /^alias bbr=.*net-tcp-tune\.sh/ { next }
+        { print }
+    ' "$input_file" >"$output_file"
+}
+
+write_managed_block() {
+    cat <<'EOF' | sed \
+        -e "s|__RAW_URL__|$RAW_URL|g" \
+        -e "s|__FALLBACK_URL__|$FALLBACK_URL|g"
+# >>> vps-tcp-tune >>>
+bbr() {
+    local primary_url="__RAW_URL__"
+    local fallback_url="__FALLBACK_URL__"
+    local script_file exit_code
+
+    command -v curl >/dev/null 2>&1 || {
+        printf '错误：缺少 curl，请先安装 curl。\n' >&2
+        return 1
+    }
+
+    script_file="$(mktemp)" || return 1
+    if ! curl -fsSL --connect-timeout 10 --max-time 120 --retry 2 \
+        --retry-delay 1 -o "$script_file" "$primary_url"; then
+        : >"$script_file"
+        if ! curl -fsSL --connect-timeout 10 --max-time 120 --retry 2 \
+            --retry-delay 1 -o "$script_file" "$fallback_url"; then
+            printf '错误：主脚本下载失败，请检查网络或 GitHub 连接。\n' >&2
+            rm -f "$script_file"
+            return 1
+        fi
+    fi
+
+    if [ ! -s "$script_file" ] || ! bash -n "$script_file"; then
+        printf '错误：下载内容不是有效的 Bash 脚本。\n' >&2
+        rm -f "$script_file"
+        return 1
+    fi
+
+    bash "$script_file" "$@"
+    exit_code=$?
+    rm -f "$script_file"
+    return "$exit_code"
+}
+# <<< vps-tcp-tune <<<
+EOF
+}
+
+replace_config() {
+    local include_block="$1"
+
+    TEMP_FILE="$(mktemp)" || die "无法创建临时文件。"
+    strip_managed_blocks "$RC_FILE" "$TEMP_FILE" || die "清理旧配置失败。"
+
+    if [ "$include_block" = "yes" ]; then
+        while [ -s "$TEMP_FILE" ] && [ -z "$(tail -n 1 "$TEMP_FILE")" ]; do
+            sed -i '$d' "$TEMP_FILE"
+        done
+        [ ! -s "$TEMP_FILE" ] || printf '\n' >>"$TEMP_FILE"
+        write_managed_block >>"$TEMP_FILE"
+    fi
+
+    if cmp -s "$RC_FILE" "$TEMP_FILE"; then
+        return 1
+    fi
+
+    cp "$RC_FILE" "${RC_FILE}.bak.$(date +%Y%m%d_%H%M%S)" \
+        || die "备份 $RC_FILE 失败。"
+    mv "$TEMP_FILE" "$RC_FILE" || die "更新 $RC_FILE 失败。"
+    TEMP_FILE=""
+    return 0
+}
+
+install_command() {
+    command -v curl >/dev/null 2>&1 || die "缺少 curl，请先安装 curl。"
+
+    if replace_config yes; then
+        printf '%b快捷命令已安装或更新。%b\n' "$GREEN" "$NC"
     else
-        # 添加别名到配置文件
-        echo "$ALIAS_CONTENT" >> "$RC_FILE"
-        echo -e "${GREEN}✅ 别名已添加到 ${RC_FILE}${NC}"
-        echo ""
+        printf '%b快捷命令已经是最新配置。%b\n' "$YELLOW" "$NC"
     fi
 
-    echo -e "${CYAN}=== 快捷命令 ===${NC}"
-    echo ""
-    echo -e "  ${GREEN}bbr${NC}   - 一键运行脚本"
-    echo ""
-    echo -e "${CYAN}=== 使用方法 ===${NC}"
-    echo ""
-    echo "1. 重新加载配置："
-    echo -e "   ${YELLOW}source ${RC_FILE}${NC}"
-    echo ""
-    echo "2. 或者关闭终端重新打开"
-    echo ""
-    echo "3. 然后直接输入快捷命令："
-    echo -e "   ${GREEN}bbr${NC}"
-    echo ""
-    echo -e "${CYAN}=== 卸载方法 ===${NC}"
-    echo ""
-    echo "如需卸载别名，请运行："
-    echo -e "   ${YELLOW}bash install-alias.sh uninstall${NC}"
-    echo ""
-    echo -e "${CYAN}=== 现在就生效（执行以下命令）===${NC}"
-    echo ""
-    echo -e "${YELLOW}source ${RC_FILE}${NC}"
-    echo ""
+    printf '配置文件：%s\n' "$RC_FILE"
+    printf '立即生效：%bsource %s%b\n' "$CYAN" "$RC_FILE" "$NC"
+    printf '运行菜单：%bbbr%b\n' "$GREEN" "$NC"
 }
 
-# 根据模式执行相应操作
+uninstall_command() {
+    if replace_config no; then
+        printf '%b快捷命令已卸载。%b\n' "$GREEN" "$NC"
+        printf '立即生效：%bsource %s%b\n' "$CYAN" "$RC_FILE" "$NC"
+    else
+        printf '%b未找到受管的 bbr 快捷命令。%b\n' "$YELLOW" "$NC"
+    fi
+}
+
 case "$MODE" in
     install)
-        install_alias
+        detect_rc_file
+        install_command
         ;;
     uninstall)
-        uninstall_alias
+        detect_rc_file
+        uninstall_command
+        ;;
+    *)
+        die "未知参数：$MODE。可用参数：install、uninstall。"
         ;;
 esac

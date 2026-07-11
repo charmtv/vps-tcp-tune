@@ -1,37 +1,6 @@
 #!/bin/bash
-#=============================================================================
-# BBR v3 终极优化脚本 - 融合版
-# 功能：结合 XanMod 官方内核的稳定性 + 专业队列算法调优
-# 特点：安全性 + 性能 双优化
-# 版本：2.0 Ultimate Edition
-#=============================================================================
-
-#=============================================================================
-# 📋 推荐配置方案（基于实测优化）
-#=============================================================================
-# 
-# 💡 测试环境：经过本人十几二十几台不同服务器的测试
-#    包括酷雪云北京9929等多个节点的实测验证
-# 
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# 
-# ⭐ 首选方案（推荐）：
-#    步骤1 → 执行菜单选项 1：BBR v3 内核安装
-#    步骤2 → 执行菜单选项 3：BBR 直连/落地优化（智能带宽检测）
-#            选择子选项 1 进行自动检测
-#    步骤3 → 执行菜单选项 6：Realm转发timeout修复（如使用 Realm 转发）
-# 
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# 
-# 🔧 次选方案（备用）：
-#    步骤1 → 执行菜单选项 1：BBR v3 内核安装
-#    步骤2 → 执行菜单选项 5：NS论坛CAKE调优
-#    步骤3 → 执行菜单选项 6：科技lion高性能模式内核参数优化
-#            选择第一个选项
-# 
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# 
-#=============================================================================
+# VPS TCP Tune：XanMod、BBR v3、网络调优与 VPS 运维工具。
+# 推荐流程：安装内核（1）→ 重启 → BBR 调优（3）→ 按需执行 MTU/MSS（4）。
 
 # 颜色定义
 gl_hong='\033[31m'
@@ -3943,7 +3912,7 @@ LIMITSEOF
 #=============================================================================
 
 check_bbr_status() {
-    echo -e "${gl_kjlan}=== 当前系统状态 ===${gl_bai}"
+    echo -e "${gl_kjlan}[当前状态]${gl_bai}"
     local kernel_release
     kernel_release=$(uname -r)
     echo "内核版本: $kernel_release"
@@ -6768,89 +6737,75 @@ iperf3_single_thread_test() {
 # 主菜单
 #=============================================================================
 
-show_main_menu() {
-    clear
-    check_bbr_status
-    local is_installed=$?
+print_menu_section() {
+    printf '\n%b[%s]%b\n' "$gl_kjlan" "$1" "$gl_bai"
+}
 
-    echo ""
-    echo -e "${gl_zi}╔════════════════════════════════════════════╗${gl_bai}"
-    echo -e "${gl_zi}║   BBR v3 终极优化脚本 - Ultimate Edition  ║${gl_bai}"
-    echo -e "${gl_zi}╚════════════════════════════════════════════╝${gl_bai}"
-    echo ""
-    echo -e "${gl_kjlan}━━━━━━━━━━━━ 核心功能 ━━━━━━━━━━━━${gl_bai}"
-    echo -e "${gl_kjlan}[内核管理]${gl_bai}"
-    echo "1. 安装/更新 XanMod 内核 + BBR v3 ⭐ 推荐"
-    echo "2. 卸载 XanMod 内核"
-    echo ""
-    echo -e "${gl_kjlan}[BBR/网络优化]${gl_bai}"
-    echo "3. BBR 直连/落地优化（智能带宽检测）⭐ 推荐"
-    echo "4. MTU检测与MSS优化（消除重传）⭐ 推荐"
-    echo "5. NS论坛-DNS净化（抗污染/驯服DHCP）"
-    echo "6. Realm转发timeout修复 ⭐ 推荐"
-    # echo "7. NS论坛CAKE调优"      # [已注销]
-    # echo "8. 科技lion高性能模式"   # [已注销]
-    echo ""
-    echo -e "${gl_kjlan}━━━━━━━━━━━ 系统配置 ━━━━━━━━━━━${gl_bai}"
-    echo -e "${gl_kjlan}[网络设置]${gl_bai}"
-    echo "7. 设置IPv4/IPv6优先级"
-    echo "8. IPv6管理（临时/永久禁用/取消）"
-    echo "9. 设置临时SOCKS5代理"
-    echo ""
-    echo -e "${gl_kjlan}[系统管理]${gl_bai}"
-    echo "10. 虚拟内存管理"
-    echo "11. 查看系统详细状态"
-    echo ""
-    echo -e "${gl_kjlan}━━━━━━━━━━ 转发/代理配置 ━━━━━━━━━━${gl_bai}"
-    echo -e "${gl_kjlan}[Realm转发管理]${gl_bai}"
-    echo "12. Realm转发连接分析"
-    echo "13. Realm强制使用IPv4 ⭐ 推荐"
-    echo "14. IPv4/IPv6连接检测"
-    echo ""
-    echo -e "${gl_kjlan}[Xray配置]${gl_bai}"
-    echo "15. 查看Xray配置"
-    echo "16. 设置Xray IPv6出站"
-    echo "17. 恢复Xray默认配置"
-    echo ""
-    echo -e "${gl_kjlan}[代理部署]${gl_bai}"
-    echo "18. 星辰大海Snell协议 ⭐ 推荐"
-    echo "19. 星辰大海Xray一键双协议 ⭐ 推荐"
-    echo "20. 禁止端口通过中国大陆直连"
-    echo "21. 一键部署SOCKS5代理"
-    echo "22. Sub-Store多实例管理"
-    echo "23. 一键反代 🎯 ⭐ 推荐"
-    echo ""
-    echo -e "${gl_kjlan}━━━━━━━━━━━ 测试检测 ━━━━━━━━━━━${gl_bai}"
-    echo -e "${gl_kjlan}[IP质量检测]${gl_bai}"
-    echo "24. IP质量检测（IPv4+IPv6）"
-    echo "25. IP质量检测（仅IPv4）⭐ 推荐"
-    echo ""
-    echo -e "${gl_kjlan}[网络测试]${gl_bai}"
-    echo "26. 服务器带宽测试"
-    echo "27. iperf3单线程测试"
-    echo "28. 国际互联速度测试 ⭐ 推荐"
-    echo "29. 网络延迟质量检测 ⭐ 推荐"
-    echo "30. 三网回程路由测试 ⭐ 推荐"
-    echo ""
-    echo -e "${gl_kjlan}[流媒体/AI检测]${gl_bai}"
-    echo "31. IP媒体/AI解锁检测 ⭐ 推荐"
-    echo "32. NS一键检测脚本 ⭐ 推荐"
-    echo ""
-    echo -e "${gl_kjlan}━━━━━━━━━━ 第三方工具 ━━━━━━━━━━${gl_bai}"
-    echo -e "${gl_kjlan}[脚本合集]${gl_bai}"
-    echo "33. zywe_realm转发脚本 ⭐ 推荐"
-    echo "34. F佬一键sing box脚本"
-    echo "35. 科技lion脚本"
-    echo "36. 酷雪云脚本"
-    echo ""
-    echo ""
-    echo -e "${gl_hong}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    echo -e "${gl_hong}[完全卸载]${gl_bai}"
-    echo -e "${gl_hong}99. 完全卸载脚本（卸载所有内容）${gl_bai}"
-    echo ""
-    echo "0. 退出脚本"
-    echo -e "${gl_kjlan}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${gl_bai}"
-    read -e -p "请输入选择: " choice
+print_menu_item() {
+    printf ' %2s) %s\n' "$1" "$2"
+}
+
+show_main_menu() {
+    local is_installed
+
+    clear
+    printf '%b========================================%b\n' "$gl_zi" "$gl_bai"
+    printf '%b  VPS TCP Tune - BBR v3 管理菜单%b\n' "$gl_zi" "$gl_bai"
+    printf '%b========================================%b\n' "$gl_zi" "$gl_bai"
+
+    check_bbr_status
+    is_installed=$?
+
+    print_menu_section "内核与网络"
+    print_menu_item 1 "安装/更新 XanMod 内核 + BBR v3"
+    print_menu_item 2 "卸载 XanMod 内核"
+    print_menu_item 3 "BBR 直连/落地优化"
+    print_menu_item 4 "MTU 检测与 MSS 优化"
+    print_menu_item 5 "DNS 净化与安全加固"
+    print_menu_item 6 "Realm 转发 timeout 修复"
+
+    print_menu_section "系统配置"
+    print_menu_item 7 "设置 IPv4/IPv6 优先级"
+    print_menu_item 8 "IPv6 管理"
+    print_menu_item 9 "设置临时 SOCKS5 代理"
+    print_menu_item 10 "虚拟内存管理"
+    print_menu_item 11 "查看系统详细状态"
+
+    print_menu_section "转发与代理"
+    print_menu_item 12 "Realm 转发连接分析"
+    print_menu_item 13 "Realm 强制使用 IPv4"
+    print_menu_item 14 "IPv4/IPv6 连接检测"
+    print_menu_item 15 "查看 Xray 配置"
+    print_menu_item 16 "设置 Xray IPv6 出站"
+    print_menu_item 17 "恢复 Xray 默认配置"
+    print_menu_item 18 "部署 Snell"
+    print_menu_item 19 "部署 Xray 双协议"
+    print_menu_item 20 "禁止端口通过中国大陆直连"
+    print_menu_item 21 "部署 SOCKS5 代理"
+    print_menu_item 22 "Sub-Store 多实例管理"
+    print_menu_item 23 "反向代理管理"
+
+    print_menu_section "测试与检测"
+    print_menu_item 24 "IP 质量检测（IPv4 + IPv6）"
+    print_menu_item 25 "IP 质量检测（仅 IPv4）"
+    print_menu_item 26 "服务器带宽测试"
+    print_menu_item 27 "iperf3 单线程测试"
+    print_menu_item 28 "国际互联速度测试"
+    print_menu_item 29 "网络延迟质量检测"
+    print_menu_item 30 "三网回程路由测试"
+    print_menu_item 31 "流媒体与 AI 解锁检测"
+    print_menu_item 32 "NS 一键检测"
+
+    print_menu_section "第三方工具"
+    print_menu_item 33 "zywe_realm 转发脚本"
+    print_menu_item 34 "F佬 sing-box 脚本"
+    print_menu_item 35 "科技 lion 脚本"
+    print_menu_item 36 "酷雪云脚本"
+
+    printf '\n%b %2s) %s%b\n' "$gl_hong" 99 "完全卸载脚本" "$gl_bai"
+    print_menu_item 0 "退出"
+    printf '%b----------------------------------------%b\n' "$gl_kjlan" "$gl_bai"
+    read -e -p "请选择功能 [0-36/99]: " choice
 
     case $choice in
         1)

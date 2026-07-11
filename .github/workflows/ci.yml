@@ -1,0 +1,33 @@
+name: 持续集成
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  shell:
+    name: Shell 检查
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+
+      - name: 安装 ShellCheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+
+      - name: Bash 语法检查
+        run: bash -n install-alias.sh net-tcp-tune.sh Eric_port-traffic-dog.sh tests/test_install_alias.sh
+
+      - name: ShellCheck
+        run: shellcheck install-alias.sh tests/test_install_alias.sh
+
+      - name: 安装器回归测试
+        run: bash tests/test_install_alias.sh
