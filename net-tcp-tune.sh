@@ -35,6 +35,38 @@ break_end() {
     echo ""
 }
 
+run_remote_bash_script() {
+    local url="$1"
+    shift
+
+    local script_file exit_code
+    command -v curl >/dev/null 2>&1 || install_package curl || return 1
+
+    script_file=$(mktemp) || {
+        echo -e "${gl_hong}错误: 无法创建临时文件${gl_bai}"
+        return 1
+    }
+
+    if ! curl -fsSL --connect-timeout 10 --max-time 180 --retry 2 \
+        --retry-delay 1 -o "$script_file" "$url"; then
+        echo -e "${gl_hong}错误: 下载远程脚本失败${gl_bai}"
+        echo "地址: $url"
+        rm -f "$script_file"
+        return 1
+    fi
+
+    if [ ! -s "$script_file" ] || ! bash -n "$script_file"; then
+        echo -e "${gl_hong}错误: 下载内容不是有效的 Bash 脚本${gl_bai}"
+        rm -f "$script_file"
+        return 1
+    fi
+
+    bash "$script_file" "$@"
+    exit_code=$?
+    rm -f "$script_file"
+    return "$exit_code"
+}
+
 clean_sysctl_conf() {
     # 备份主配置文件
     if [ -f /etc/sysctl.conf ] && ! [ -f /etc/sysctl.conf.bak.original ]; then
@@ -4008,86 +4040,18 @@ install_xanmod_kernel() {
     # 检测 CPU 架构
     local cpu_arch=$(uname -m)
     
-    # ARM 架构特殊处理
+    # ARM64 使用独立维护的 BBR v3 安装器
     if [ "$cpu_arch" = "aarch64" ]; then
-        echo -e "${gl_kjlan}检测到 ARM64 架构，使用专用安装脚本${gl_bai}"
-
-        install_package curl coreutils || return 1
-
-        local tmp_dir
-        tmp_dir=$(mktemp -d 2>/dev/null)
-        if [ -z "$tmp_dir" ]; then
-            echo -e "${gl_hong}错误: 无法创建临时目录用于下载 ARM64 脚本${gl_bai}"
-            return 1
-        fi
-
-        local script_url="https://jhb.ovh/jb/bbrv3arm.sh"
-        local sha256_url="${script_url}.sha256"
-        local sha512_url="${script_url}.sha512"
-        local script_path="${tmp_dir}/bbrv3arm.sh"
-        local sha256_path="${tmp_dir}/bbrv3arm.sh.sha256"
-        local sha512_path="${tmp_dir}/bbrv3arm.sh.sha512"
-
-        echo "日志: 正在下载 ARM64 安装脚本到临时目录 ${tmp_dir}"
-
-        if ! curl -fsSL "$script_url" -o "$script_path"; then
-            echo -e "${gl_hong}错误: ARM64 安装脚本下载失败${gl_bai}"
-            rm -rf "$tmp_dir"
-            return 1
-        fi
-
-        if ! curl -fsSL "$sha256_url" -o "$sha256_path"; then
-            echo -e "${gl_hong}错误: 未能获取发布方提供的 SHA256 校验文件${gl_bai}"
-            rm -rf "$tmp_dir"
-            return 1
-        fi
-
-        if ! curl -fsSL "$sha512_url" -o "$sha512_path"; then
-            echo -e "${gl_hong}错误: 未能获取发布方提供的 SHA512 校验文件${gl_bai}"
-            rm -rf "$tmp_dir"
-            return 1
-        fi
-
-        local expected_sha256 expected_sha512 actual_sha256 actual_sha512
-        expected_sha256=$(awk 'NR==1 {print $1}' "$sha256_path")
-        expected_sha512=$(awk 'NR==1 {print $1}' "$sha512_path")
-
-        if [ -z "$expected_sha256" ] || [ -z "$expected_sha512" ]; then
-            echo -e "${gl_hong}错误: 校验文件内容无效${gl_bai}"
-            rm -rf "$tmp_dir"
-            return 1
-        fi
-
-        actual_sha256=$(sha256sum "$script_path" | awk '{print $1}')
-        actual_sha512=$(sha512sum "$script_path" | awk '{print $1}')
-
-        if [ "$expected_sha256" != "$actual_sha256" ]; then
-            echo -e "${gl_hong}错误: SHA256 校验失败，已中止${gl_bai}"
-            rm -rf "$tmp_dir"
-            return 1
-        fi
-
-        if [ "$expected_sha512" != "$actual_sha512" ]; then
-            echo -e "${gl_hong}错误: SHA512 校验失败，已中止${gl_bai}"
-            rm -rf "$tmp_dir"
-            return 1
-        fi
-
-        echo -e "${gl_lv}SHA256 与 SHA512 校验通过${gl_bai}"
-        echo -e "${gl_huang}安全提示:${gl_bai} ARM64 脚本已下载至 ${script_path}"
-        echo "如需，您可在继续前使用 cat/less 等命令手动审查脚本内容。"
-        read -s -r -p "审查完成后按 Enter 继续执行（Ctrl+C 取消）..." _
-        echo ""
-
-        if bash "$script_path"; then
-            rm -rf "$tmp_dir"
-            echo -e "${gl_lv}ARM BBR v3 安装完成${gl_bai}"
+        echo -e "${gl_kjlan}检测到 ARM64，使用米粒 BBR v3 最新安装器${gl_bai}"
+        if run_remote_bash_script \
+            "https://raw.githubusercontent.com/charmtv/ml-bbrv3/main/install.sh" \
+            --latest --yes; then
+            echo -e "${gl_lv}ARM64 BBR v3 内核安装完成${gl_bai}"
             return 0
-        else
-            echo -e "${gl_hong}安装失败${gl_bai}"
-            rm -rf "$tmp_dir"
-            return 1
         fi
+
+        echo -e "${gl_hong}ARM64 BBR v3 内核安装失败${gl_bai}"
+        return 1
     fi
     
     # x86_64 架构安装流程
@@ -6406,7 +6370,7 @@ run_backtrace() {
     echo ""
 
     # 执行三网回程路由测试脚本
-    curl https://raw.githubusercontent.com/ludashi2020/backtrace/main/install.sh -sSf | sh
+    run_remote_bash_script "https://raw.githubusercontent.com/ludashi2020/backtrace/main/install.sh"
 
     echo ""
     echo "------------------------------------------------"
@@ -6422,7 +6386,7 @@ run_ns_detect() {
     echo ""
 
     # 执行 NS 一键检测脚本
-    bash <(curl -sL https://run.NodeQuality.com)
+    run_remote_bash_script "https://run.NodeQuality.com"
 
     echo ""
     echo "------------------------------------------------"
@@ -6438,7 +6402,7 @@ run_ip_quality_check() {
     echo ""
 
     # 执行 IP 质量检测脚本
-    bash <(curl -Ls https://IP.Check.Place)
+    run_remote_bash_script "https://IP.Check.Place"
 
     echo ""
     echo "------------------------------------------------"
@@ -6454,7 +6418,7 @@ run_ip_quality_check_ipv4() {
     echo ""
 
     # 执行 IP 质量检测脚本 - 仅 IPv4
-    bash <(curl -Ls https://IP.Check.Place) -4
+    run_remote_bash_script "https://IP.Check.Place" -4
 
     echo ""
     echo "------------------------------------------------"
@@ -6470,7 +6434,7 @@ run_network_latency_check() {
     echo ""
 
     # 执行网络延迟质量检测脚本
-    bash <(curl -sL https://Check.Place) -N
+    run_remote_bash_script "https://Check.Place" -N
 
     echo ""
     echo "------------------------------------------------"
@@ -6750,7 +6714,7 @@ show_main_menu() {
 
     clear
     printf '%b========================================%b\n' "$gl_zi" "$gl_bai"
-    printf '%b  VPS TCP Tune - BBR v3 管理菜单%b\n' "$gl_zi" "$gl_bai"
+    printf '%b  米粒 VPS TCP Tune - BBR v3 管理菜单%b\n' "$gl_zi" "$gl_bai"
     printf '%b========================================%b\n' "$gl_zi" "$gl_bai"
 
     check_bbr_status
@@ -7386,7 +7350,8 @@ run_unlock_check() {
     echo ""
 
     # 执行解锁检测脚本
-    bash <(curl -L -s https://github.com/1-stream/RegionRestrictionCheck/raw/main/check.sh)
+    run_remote_bash_script \
+        "https://raw.githubusercontent.com/1-stream/RegionRestrictionCheck/main/check.sh"
 
     echo ""
     echo "------------------------------------------------"
@@ -7402,7 +7367,8 @@ run_pf_realm() {
     echo ""
 
     # 执行 zywe_realm 转发脚本
-    if wget -qO- https://raw.githubusercontent.com/zywe03/realm-xwPF/main/xwPF.sh | bash -s install; then
+    if run_remote_bash_script \
+        "https://raw.githubusercontent.com/zywe03/realm-xwPF/main/xwPF.sh" install; then
         echo ""
         echo -e "${gl_lv}✅ zywe_realm 脚本执行完成${gl_bai}"
     else
@@ -7428,7 +7394,7 @@ run_kxy_script() {
     echo ""
 
     # 执行酷雪云脚本
-    bash <(curl -sL https://cdn.kxy.ovh/kxy.sh)
+    run_remote_bash_script "https://cdn.kxy.ovh/kxy.sh"
 
     echo ""
     echo "------------------------------------------------"
@@ -10904,7 +10870,8 @@ run_kejilion_script() {
     echo ""
 
     # 执行科技lion脚本
-    bash <(curl -sL kejilion.sh)
+    run_remote_bash_script \
+        "https://raw.githubusercontent.com/kejilion/sh/main/kejilion.sh"
 
     echo ""
     echo "------------------------------------------------"
@@ -10920,7 +10887,8 @@ run_fscarmen_singbox() {
     echo ""
 
     # 执行 F佬一键sing box脚本
-    bash <(wget -qO- https://raw.githubusercontent.com/fscarmen/sing-box/main/sing-box.sh)
+    run_remote_bash_script \
+        "https://raw.githubusercontent.com/fscarmen/sing-box/main/sing-box.sh"
 
     echo ""
     echo "------------------------------------------------"
@@ -10944,7 +10912,9 @@ remove_bbr_lotserver() {
   rm -rf bbrmod
 
   if [[ -e /appex/bin/lotServer.sh ]]; then
-    echo | bash <(wget -qO- https://raw.githubusercontent.com/fei5seven/lotServer/master/lotServerInstall.sh) uninstall
+    printf '\n' | run_remote_bash_script \
+      "https://raw.githubusercontent.com/fei5seven/lotServer/master/lotServerInstall.sh" \
+      uninstall
   fi
   clear
 }
@@ -11560,7 +11530,7 @@ install_singbox_binary() {
             
             # 如果 API 失败，使用默认版本
             if [ -z "$version" ]; then
-                version="1.10.0"
+                version="1.13.14"
                 echo -e "${gl_huang}  ⚠️  API 获取失败，使用默认版本: v${version}${gl_bai}"
             else
                 echo -e "${gl_lv}  ✓ 最新版本: v${version}${gl_bai}"
@@ -12142,15 +12112,17 @@ check_substore_docker() {
                 case "$mirror_choice" in
                     1)
                         echo "正在使用阿里云镜像安装 Docker..."
-                        curl -fsSL https://get.docker.com | bash -s docker --mirror Aliyun
+                        run_remote_bash_script \
+                            "https://get.docker.com" --mirror Aliyun
                         ;;
                     2)
                         echo "正在使用官方源安装 Docker..."
-                        curl -fsSL https://get.docker.com | bash
+                        run_remote_bash_script "https://get.docker.com"
                         ;;
                     *)
                         echo "无效选择，使用阿里云镜像..."
-                        curl -fsSL https://get.docker.com | bash -s docker --mirror Aliyun
+                        run_remote_bash_script \
+                            "https://get.docker.com" --mirror Aliyun
                         ;;
                 esac
                 

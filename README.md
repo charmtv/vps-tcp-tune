@@ -1,4 +1,4 @@
-# VPS TCP Tune
+# 米粒 VPS TCP Tune
 
 面向 Debian/Ubuntu VPS 的网络调优与运维脚本，集成 XanMod、BBR v3、MTU/MSS 优化、代理管理和网络检测工具。
 

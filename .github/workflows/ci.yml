@@ -24,10 +24,13 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y shellcheck
 
       - name: Bash 语法检查
-        run: bash -n install-alias.sh net-tcp-tune.sh Eric_port-traffic-dog.sh tests/test_install_alias.sh
+        run: bash -n install-alias.sh net-tcp-tune.sh Eric_port-traffic-dog.sh tests/*.sh
 
       - name: ShellCheck
-        run: shellcheck install-alias.sh tests/test_install_alias.sh
+        run: shellcheck install-alias.sh tests/*.sh
 
       - name: 安装器回归测试
         run: bash tests/test_install_alias.sh
+
+      - name: 集成入口检查
+        run: bash tests/test_integrations.sh
